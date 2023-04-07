@@ -7,25 +7,44 @@
 
 import SwiftUI
 
+enum Sheets: Identifiable {
+    var id: UUID {
+        return UUID()
+    }
+    
+    case addNewCity
+    case settings
+}
 
 struct WeatherListScreen: View {
     
+    @EnvironmentObject var store:Store
+    @State private var activeSheet: Sheets?
         
     var body: some View {
         
         List {
-            ForEach(1...20, id: \.self) { index in
-                Text("\(index)")
+            ForEach(store.weatherList, id: \.id) { weather in
+                WeatherCell(weather: weather).environmentObject(store)
             }
             }
         .listStyle(PlainListStyle())
         
+        .sheet(item: $activeSheet, content: { item in
+            switch item {
+            case .addNewCity:
+                AddCityScreen().environmentObject(store)
+            case .settings:
+                SettingsScreen().environmentObject(store)
+            }
+        })
+        
         .navigationBarItems(leading: Button(action: {
-           
+            activeSheet = .settings
         }) {
             Image(systemName: "gearshape")
         }, trailing: Button(action: {
-            
+            activeSheet = .addNewCity
         }, label: {
             Image(systemName: "plus")
         }))
@@ -42,25 +61,28 @@ struct WeatherListScreen_Previews: PreviewProvider {
 }
 
 struct WeatherCell: View {
+    let weather : WeatherViewModel
+    @EnvironmentObject var store:Store
     
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 15) {
-                Text("Houston")
+                Text(weather.city)
                     .fontWeight(.bold)
                 HStack {
                     Image(systemName: "sunrise")
-                    Text("\(Date().formatAsString())")
+                    Text("\(weather.sunrise.formatAsString())")
                 }
                 HStack {
                     Image(systemName: "sunset")
-                    Text("\(Date().formatAsString())")
+                    Text("\(weather.sunset.formatAsString())")
                 }
             }
             Spacer()
+            URLImage(url: weather.icon)
+                .frame(width: 50, height: 50)
             
-            
-            Text("72 F")
+            Text("\(Int(weather.getTemperatureByUnit(unit: store.selectedUnit)))\(String(store.selectedUnit.displayText.prefix(1)))")
         }
         .padding()
         .background(Color(#colorLiteral(red: 0.9133135676, green: 0.9335765243, blue: 0.98070997, alpha: 1)))
